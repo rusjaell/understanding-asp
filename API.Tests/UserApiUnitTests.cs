@@ -41,6 +41,23 @@ public class UserApiUnitTests
     }
 
     [Fact]
+    public void UpdateUser()
+    {
+        var originalUser = _userService.Create(new User(0, "beforeupdate", "before@example.com"));
+        Assert.NotNull(originalUser);
+
+        var updatedUser = new User(originalUser.Id, "afterupdate", "after@example.com");
+        var success = _userService.Update(originalUser.Id, updatedUser);
+
+        Assert.True(success);
+
+        var fetched = _userService.GetById(originalUser.Id);
+        Assert.NotNull(fetched);
+        Assert.Equal("afterupdate", fetched.Username);
+        Assert.Equal("after@example.com", fetched.Email);
+    }
+
+    [Fact]
     public void DeleteUser()
     {
         var createdUser = _userService.Create(new User(0, "todelete", "delete@example.com"));

@@ -1,4 +1,5 @@
 using API.Services;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,7 +8,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 
 // Adds my custom service
-
 builder.Services.AddSingleton<IUserService, MockUserService>();
 
 var app = builder.Build();
@@ -20,6 +20,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.Use((context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Request from {IP} to {Path}", context.Connection.RemoteIpAddress?.ToString() ?? "Unknown", context.Request.Path);
+
+    return next.Invoke();
+});
+
 app.MapGet("/users", (IUserService userService) => userService.GetAll()).WithName("GetAllUsers");
 
 app.MapGet("/users/{id:int}", (int id, IUserService userService) =>
@@ -28,8 +36,7 @@ app.MapGet("/users/{id:int}", (int id, IUserService userService) =>
     if (user != null)
         return Results.Ok(user);
     return Results.NotFound();
-})
-.WithName("GetUserById");
+}).WithName("GetUserById");
 
 app.MapPost("/users", (User user, IUserService userService) =>
 {
@@ -41,8 +48,7 @@ app.MapPost("/users", (User user, IUserService userService) =>
         return Results.Problem("User creation failed.");
 
     return Results.Created($"/users/{createdUser.Id}", createdUser);
-})
-.WithName("CreateUser");
+}).WithName("CreateUser");
 
 app.MapPut("/users/{id:int}", (int id, User user, IUserService userService) =>
 {
@@ -51,8 +57,7 @@ app.MapPut("/users/{id:int}", (int id, User user, IUserService userService) =>
         return Results.Ok(successful);
     
     return Results.NotFound();
-})
-.WithName("UpdateUser");
+}).WithName("UpdateUser");
 
 app.MapDelete("/users/{id:int}", (int id, IUserService userService) =>
 {
@@ -61,7 +66,6 @@ app.MapDelete("/users/{id:int}", (int id, IUserService userService) =>
         return Results.NoContent();
     
     return Results.NotFound();
-})
-.WithName("DeleteUser");
+}).WithName("DeleteUser");
 
 app.Run();
